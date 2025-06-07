@@ -27,38 +27,36 @@ pipeline {
         }
 
         stage('Build Docker Image') {
-      steps {
-        script {
-          env.BUILT_IMAGE_ID = docker.build(env.DOCKER_IMAGE).id
-        }
-      }
-    }
-
-    stage('Push to Docker Hub') {
-      steps {
-        script {
-          docker.withRegistry('https://index.docker.io/v1/', env.DOCKER_CREDENTIALS_ID) {
-            docker.image(env.DOCKER_IMAGE).push("latest")
-          }
-        }
-      }
-    }
-
-    stage('Deploy to Kubernetes') {
-      steps {
-        script {
-          try {
-            withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://192.168.217.133:8443']) {
-              bat 'kubectl apply -f K8s --validate=false'
+            steps {
+                script {
+                    env.BUILT_IMAGE_ID = docker.build(env.DOCKER_IMAGE).id
+                }
             }
-          } catch (Exception e) {
-            error "Kubernetes deployment failed: ${e.getMessage()}"
-          }
         }
-      }
-    }
-  }
 
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', env.REGISTRY_CREDENTIALS_ID) {
+                        docker.image(env.DOCKER_IMAGE).push("latest")
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    try {
+                        withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://192.168.217.133:8443']) {
+                            bat 'kubectl apply -f K8s --validate=false'
+                        }
+                    } catch (Exception e) {
+                        error "Kubernetes deployment failed: ${e.getMessage()}"
+                    }
+                }
+            }
+        }
     }
 
     post {
