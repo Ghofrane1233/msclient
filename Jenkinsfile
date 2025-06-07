@@ -2,16 +2,12 @@ pipeline {
     agent any
 
     environment {
-        // Nom de l'image Docker
         DOCKER_IMAGE = "ghofrane694/msclient"
-        
-        // Identifiants
-        REGISTRY_CREDENTIALS = credentials('dockerhub-credentials-id')
+        REGISTRY_CREDENTIALS_ID = 'dockerhub-credentials-id'
         GIT_CREDENTIALS_ID = 'git-credentials-id'
     }
 
     stages {
-
         stage('Cloner le dépôt Git') {
             steps {
                 git credentialsId: "${GIT_CREDENTIALS_ID}", url: 'https://github.com/Ghofrane1233/msclient.git', branch: 'main'
@@ -20,13 +16,13 @@ pipeline {
 
         stage('Installation des dépendances') {
             steps {
-                bat 'npm install'
+                bat 'npm install' // Remplacer par sh si sur un agent Linux
             }
         }
 
         stage('Tests') {
             steps {
-                bat 'npm test'
+                bat 'npm test' // Remplacer par sh si sur un agent Linux
             }
         }
 
@@ -41,9 +37,11 @@ pipeline {
         stage('Push de l’image Docker sur Docker Hub') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', "${REGISTRY_CREDENTIALS}") {
-                        docker.image("${DOCKER_IMAGE}:${env.BUILD_NUMBER}").push()
-                        docker.image("${DOCKER_IMAGE}:${env.BUILD_NUMBER}").push("latest")
+                    withCredentials([usernamePassword(credentialsId: "${REGISTRY_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_USERNAME}:${DOCKER_PASSWORD}") {
+                            docker.image("${DOCKER_IMAGE}:${env.BUILD_NUMBER}").push()
+                            docker.image("${DOCKER_IMAGE}:${env.BUILD_NUMBER}").push("latest")
+                        }
                     }
                 }
             }
@@ -52,12 +50,10 @@ pipeline {
         stage('Déploiement sur Minikube') {
             steps {
                 script {
-                    // Mise à jour de l’image dans le fichier YAML
                     bat """
                     powershell -Command "(Get-Content k8s-deployment.yaml) -replace 'ghofrane694/msclient:latest', 'ghofrane694/msclient:${BUILD_NUMBER}' | Set-Content k8s-deployment-deploy.yaml"
                     """
 
-                    // Déploiement Kubernetes
                     bat """
                     kubectl delete deployment msclient --ignore-not-found
                     kubectl delete secret db-secret --ignore-not-found
