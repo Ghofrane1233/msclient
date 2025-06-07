@@ -2,47 +2,48 @@ pipeline {
     agent any
 
     environment {
-        // Image Docker à construire et publier
+        // Nom de l'image Docker
         DOCKER_IMAGE = "ghofrane694/msclient"
         
-        // Identifiants Jenkins (doivent être créés dans "Manage Credentials")
-        REGISTRY_CREDENTIALS = credentials('dockerhub-credentials-id') // Docker Hub
-        GIT_CREDENTIALS = 'git-credentials-id' // GitHub Token (type: Username with password)
+        // Identifiants
+        REGISTRY_CREDENTIALS = credentials('dockerhub-credentials-id')
+        GIT_CREDENTIALS_ID = 'git-credentials-id'
     }
 
     stages {
-        stage('Clone du dépôt') {
+
+        stage('Cloner le dépôt Git') {
             steps {
-                git credentialsId: "${GIT_CREDENTIALS}", url: 'https://github.com/Ghofrane1233/msclient.git'
+                git credentialsId: "${GIT_CREDENTIALS_ID}", url: 'https://github.com/Ghofrane1233/msclient.git', branch: 'main'
             }
         }
 
-        stage('Installer les dépendances') {
+        stage('Installation des dépendances') {
             steps {
                 bat 'npm install'
             }
         }
 
-        stage('Exécuter les tests') {
+        stage('Tests') {
             steps {
                 bat 'npm test'
             }
         }
 
-        stage('Construire l’image Docker') {
+        stage('Construction de l’image Docker') {
             steps {
                 script {
-                    docker.build("${DOCKER_IMAGE}:${BUILD_NUMBER}")
+                    docker.build("${DOCKER_IMAGE}:${env.BUILD_NUMBER}")
                 }
             }
         }
 
-        stage('Pousser l’image Docker') {
+        stage('Push de l’image Docker sur Docker Hub') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', REGISTRY_CREDENTIALS) {
-                        docker.image("${DOCKER_IMAGE}:${BUILD_NUMBER}").push()
-                        docker.image("${DOCKER_IMAGE}:${BUILD_NUMBER}").push("latest")
+                    docker.withRegistry('https://index.docker.io/v1/', "${REGISTRY_CREDENTIALS}") {
+                        docker.image("${DOCKER_IMAGE}:${env.BUILD_NUMBER}").push()
+                        docker.image("${DOCKER_IMAGE}:${env.BUILD_NUMBER}").push("latest")
                     }
                 }
             }
@@ -51,7 +52,7 @@ pipeline {
         stage('Déploiement sur Minikube') {
             steps {
                 script {
-                    // ⚠️ Vérifie que PowerShell est installé et que le fichier YAML existe
+                    // Mise à jour de l’image dans le fichier YAML
                     bat """
                     powershell -Command "(Get-Content k8s-deployment.yaml) -replace 'ghofrane694/msclient:latest', 'ghofrane694/msclient:${BUILD_NUMBER}' | Set-Content k8s-deployment-deploy.yaml"
                     """
@@ -74,7 +75,7 @@ pipeline {
             echo "✅ Déploiement terminé avec succès sur Minikube."
         }
         failure {
-            echo "❌ Échec de la pipeline. Vérifie les logs pour plus d'infos."
+            echo "❌ La pipeline a échoué. Vérifiez les logs pour plus de détails."
         }
     }
 }
