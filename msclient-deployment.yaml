@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: msclient
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: msclient
+  template:
+    metadata:
+      labels:
+        app: msclient
+    spec:
+      containers:
+        - name: msclient
+          image: ghofrane694/msclient:latest # sera remplacé dans le Jenkinsfile
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: DB_HOST
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: DB_PASSWORD
+            - name: DB_PORT
+              value: "3306"
