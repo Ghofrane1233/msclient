@@ -26,44 +26,39 @@ pipeline {
             }
         }
 
-        stage('Construction de l’image Docker') {
-            steps {
-                script {
-                    docker.build("${DOCKER_IMAGE}:${env.BUILD_NUMBER}")
-                }
-            }
+        stage('Build Docker Image') {
+      steps {
+        script {
+          env.BUILT_IMAGE_ID = docker.build(env.DOCKER_IMAGE).id
         }
+      }
+    }
 
-        stage('Push de l’image Docker sur Docker Hub') {
-            steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: "${REGISTRY_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_USERNAME}:${DOCKER_PASSWORD}") {
-                            docker.image("${DOCKER_IMAGE}:${env.BUILD_NUMBER}").push()
-                            docker.image("${DOCKER_IMAGE}:${env.BUILD_NUMBER}").push("latest")
-                        }
-                    }
-                }
-            }
+    stage('Push to Docker Hub') {
+      steps {
+        script {
+          docker.withRegistry('https://index.docker.io/v1/', env.DOCKER_CREDENTIALS_ID) {
+            docker.image(env.DOCKER_IMAGE).push("latest")
+          }
         }
+      }
+    }
 
-        stage('Déploiement sur Minikube') {
-            steps {
-                script {
-                    bat """
-                    powershell -Command "(Get-Content k8s-deployment.yaml) -replace 'ghofrane694/msclient:latest', 'ghofrane694/msclient:${BUILD_NUMBER}' | Set-Content k8s-deployment-deploy.yaml"
-                    """
-
-                    bat """
-                    kubectl delete deployment msclient --ignore-not-found
-                    kubectl delete secret db-secret --ignore-not-found
-
-                    kubectl apply -f db-secret.yaml
-                    kubectl apply -f k8s-deployment-deploy.yaml
-                    """
-                }
+    stage('Deploy to Kubernetes') {
+      steps {
+        script {
+          try {
+            withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://192.168.217.133:8443']) {
+              bat 'kubectl apply -f K8s --validate=false'
             }
+          } catch (Exception e) {
+            error "Kubernetes deployment failed: ${e.getMessage()}"
+          }
         }
+      }
+    }
+  }
+
     }
 
     post {
