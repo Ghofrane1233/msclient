@@ -49,7 +49,8 @@ pipeline {
                 script {
                     try {
                         withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://192.168.217.133:8443']) {
-                            bat 'kubectl apply -f K8s --validate=false'
+                            bat kubectl apply -f db-secret.yaml --validate=false
+                            bat kubectl apply -f k8s-deployment-deploy.yaml --validate=false'
                         }
                     } catch (Exception e) {
                         error "Kubernetes deployment failed: ${e.getMessage()}"
