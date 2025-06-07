@@ -16,13 +16,13 @@ pipeline {
 
         stage('Installation des dépendances') {
             steps {
-                bat 'npm install' // Remplacer par sh si sur un agent Linux
+                bat 'npm install' // Utiliser sh si l'agent est sous Linux
             }
         }
 
         stage('Tests') {
             steps {
-                bat 'npm test' // Remplacer par sh si sur un agent Linux
+                bat 'npm test' // Utiliser sh si l'agent est sous Linux
             }
         }
 
@@ -49,8 +49,8 @@ pipeline {
                 script {
                     try {
                         withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://192.168.217.133:8443']) {
-                            bat kubectl apply -f db-secret.yaml --validate=false
-                            bat kubectl apply -f k8s-deployment-deploy.yaml --validate=false'
+                            bat 'kubectl apply -f db-secret.yaml --validate=false'
+                            bat 'kubectl apply -f k8s-deployment-deploy.yaml --validate=false'
                         }
                     } catch (Exception e) {
                         error "Kubernetes deployment failed: ${e.getMessage()}"
