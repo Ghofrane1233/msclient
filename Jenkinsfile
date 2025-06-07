@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = "ghofrane694/msclient"
-        REGISTRY_CREDENTIALS_ID = 'dockerhub-credentials-id'
+        REGISTRY_CREDENTIALS_ID = 'docker-credentials-id'
         GIT_CREDENTIALS_ID = 'git-credentials-id'
     }
 
