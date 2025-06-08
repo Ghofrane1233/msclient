@@ -50,7 +50,7 @@ pipeline {
                     try {
                         withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://127.0.0.1:53094']) {
                             bat 'kubectl apply -f db-secret.yaml --validate=false'
-                            bat 'kubectl apply -f msclient-deployment.yaml --validate=false'
+                            bat 'kubectl apply -f k8s/deployment.yaml --validate=false'
                             bat 'kubectl apply -f k8s/service.yaml --validate=false'
                         }
                     } catch (Exception e) {
