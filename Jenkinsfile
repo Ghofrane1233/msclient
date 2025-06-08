@@ -48,7 +48,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://192.168.217.133:8443']) {
+                        withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://127.0.0.1:53094']) {
                             bat 'kubectl apply -f db-secret.yaml --validate=false'
                             bat 'kubectl apply -f msclient-deployment.yaml --validate=false'
                         }
