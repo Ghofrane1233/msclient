@@ -2,78 +2,87 @@ pipeline {
     agent any
 
     environment {
-        // Image Docker
         DOCKER_IMAGE = "ghofrane694/msclient"
-        // Identifiants
-        REGISTRY_CREDENTIALS = credentials('dockerhub-credentials-id')
-        GIT_CREDENTIALS = credentials('git-credentials-id')
+        REGISTRY_CREDENTIALS_ID = 'docker-hub-credentials-id'
+        GIT_CREDENTIALS_ID = 'git-credentials-id'
     }
 
     stages {
-        stage('Clone du repo') {
+        stage('Cloner le dépôt Git') {
             steps {
-                git credentialsId: "${GIT_CREDENTIALS}", url: 'https://github.com/Ghofrane1233/msclient.git'
+                git credentialsId: "${GIT_CREDENTIALS_ID}", url: 'https://github.com/Ghofrane1233/msclient.git', branch: 'main'
             }
         }
 
-        stage('Install dépendances') {
+        stage('Installation des dépendances') {
             steps {
-                bat 'npm install'
+                bat 'npm install' // Utiliser sh si l'agent est sous Linux
             }
         }
 
         stage('Tests') {
             steps {
-                bat 'npm test'
+                bat 'npm test' // Utiliser sh si l'agent est sous Linux
             }
         }
 
-        stage('Build Docker image') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build("${DOCKER_IMAGE}:${env.BUILD_NUMBER}")
+                    env.BUILT_IMAGE_ID = docker.build(env.DOCKER_IMAGE).id
                 }
             }
         }
 
-        stage('Push Docker image') {
+        stage('Push to Docker Hub') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials-id') {
-                        docker.image("${DOCKER_IMAGE}:${env.BUILD_NUMBER}").push()
-                        docker.image("${DOCKER_IMAGE}:${env.BUILD_NUMBER}").push("latest")
+                    docker.withRegistry('https://index.docker.io/v1/', env.REGISTRY_CREDENTIALS_ID) {
+                        docker.image(env.DOCKER_IMAGE).push("latest")
                     }
                 }
             }
         }
 
-        stage('Déploiement sur Minikube') {
+        stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Remplacer l’image dans le fichier YAML
-                    bat """
-                    powershell -Command "(Get-Content k8s-deployment.yaml) -replace 'ghofrane694/msclient:latest', 'ghofrane694/msclient:${BUILD_NUMBER}' | Set-Content k8s-deployment-deploy.yaml"
-                    """
-
-                    // Appliquer les ressources Kubernetes
-                    bat """
-                    kubectl delete deployment msclient --ignore-not-found
-                    kubectl delete secret db-secret --ignore-not-found
-
-                    kubectl apply -f db-secret.yaml
-                    kubectl apply -f k8s-deployment-deploy.yaml
-                    """
+                    try {
+                        withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://127.0.0.1:54825']) {
+                            bat 'kubectl apply -f db-secret.yaml --validate=false'
+                            bat 'kubectl apply -f k8s/deployment.yaml --validate=false'
+                            bat 'kubectl apply -f k8s/service.yaml --validate=false'
+                        }
+                    } catch (Exception e) {
+                        error "Kubernetes deployment failed: ${e.getMessage()}"
+                    }
                 }
             }
         }
     }
+stage('Deploy Monitoring Stack') {
+    steps {
+        script {
+            withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://127.0.0.1:54825']) {
+                // Déployer Prometheus
+                bat 'kubectl apply -f monitoring/prometheus-config.yaml'
+                bat 'kubectl apply -f monitoring/prometheus-deployment.yaml'
+                bat 'kubectl apply -f monitoring/prometheus-service.yaml'
+
+                // Déployer Grafana
+                bat 'kubectl apply -f monitoring/grafana-deployment.yaml'
+                bat 'kubectl apply -f monitoring/grafana-service.yaml'
+            }
+        }
+    }
+}
 
     post {
         success {
             echo "✅ Déploiement terminé avec succès sur Minikube."
         }
         failure {
-            echo "❌ Échec de la pipeline."
+            echo "❌ La pipeline a échoué. Vérifiez les logs pour plus de détails."
         }
     }
 }

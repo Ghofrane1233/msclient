@@ -1,20 +1,5 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: msclient
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: msclient
-  template:
-    metadata:
-      labels:
-        app: msclient
-    spec:
-      containers:
         - name: msclient
-          image: ghofrane694/msclient:latest # sera remplacé dans le Jenkinsfile
+          image: ghofrane694/msclient:latest
           ports:
             - containerPort: 3000
           env:
@@ -35,3 +20,10 @@ spec:
                   key: DB_PASSWORD
             - name: DB_PORT
               value: "3306"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
