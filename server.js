@@ -44,6 +44,10 @@ function authenticateToken(req, res, next) {
 // Routes sécurisées clients
 // ----------------------
 
+app.get('/', (req, res) => {
+  res.send('Microservice msclient opérationnel ✅');
+});
+
 // 1. Récupérer les clients (avec pagination)
 app.get('/clients', authenticateToken, async (req, res) => {
   const page = parseInt(req.query.page) || 1;
