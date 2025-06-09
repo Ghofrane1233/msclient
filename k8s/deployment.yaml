@@ -15,6 +15,5 @@ spec:
       containers:
       - name: msclient
         image: ghofrane694/msclient
-        imagePullPolicy: Never
         ports:
         - containerPort: 5001
