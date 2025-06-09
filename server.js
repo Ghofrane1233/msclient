@@ -3,14 +3,40 @@ const express = require('express');
 const mysql = require('mysql2/promise'); // version async/await
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-
+const client = require('prom-client');
 const app = express();
 const PORT = process.env.PORT;
 const JWT_SECRET = process.env.JWT_SECRET;
 
+const register = new client.Registry();
+client.collectDefaultMetrics({ register });
+
+// Exemple de métriques personnalisées
+const httpRequestCounter = new client.Counter({
+  name: 'http_requests_total',
+  help: 'Nombre total de requêtes HTTP',
+  labelNames: ['method', 'route', 'status'],
+});
+register.registerMetric(httpRequestCounter);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use((req, res, next) => {
+  res.on('finish', () => {
+    httpRequestCounter.inc({
+      method: req.method,
+      route: req.path,
+      status: res.statusCode,
+    });
+  });
+  next();
+});
+
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
+});
 
 // Configuration de la base de données
 const dbConfig = {
@@ -40,13 +66,11 @@ function authenticateToken(req, res, next) {
   });
 }
 
+
+
 // ----------------------
 // Routes sécurisées clients
 // ----------------------
-
-app.get('/', (req, res) => {
-  res.send('Microservice msclient opérationnel ✅');
-});
 
 // 1. Récupérer les clients (avec pagination)
 app.get('/clients', authenticateToken, async (req, res) => {
