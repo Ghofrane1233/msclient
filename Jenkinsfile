@@ -4,7 +4,8 @@ pipeline {
     environment {
         DOCKER_IMAGE = "ghofrane694/msclient"
         REGISTRY_CREDENTIALS_ID = 'docker-hub-credentials-id'
-    
+        GIT_CREDENTIALS_ID = credentials('git-credentials-id')
+
     }
 
     stages {
