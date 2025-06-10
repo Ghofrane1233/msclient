@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_IMAGE = "ghofrane694/msclient"
         REGISTRY_CREDENTIALS_ID = 'docker-hub-credentials-id'
-        GIT_CREDENTIALS_ID = 'git-credentials-id'
+    '
     }
 
     stages {
@@ -16,13 +16,13 @@ pipeline {
 
         stage('Installation des dépendances') {
             steps {
-                bat 'npm install' // Utiliser sh si l'agent est sous Linux
+                bat 'npm install' 
             }
         }
 
         stage('Tests') {
             steps {
-                bat 'npm test' // Utiliser sh si l'agent est sous Linux
+                bat 'npm test' 
             }
         }
 
