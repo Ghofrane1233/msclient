@@ -60,7 +60,7 @@ pipeline {
             }
         }
 
-        stage('Deploy Monitoring Stack') {
+        stage(' Monitoring ') {
             steps {
                 script {
                     withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://127.0.0.1:54825']) {
