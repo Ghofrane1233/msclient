@@ -4,7 +4,8 @@ pipeline {
     environment {
         DOCKER_IMAGE = "ghofrane694/msclient"
         REGISTRY_CREDENTIALS_ID = 'docker-hub-credentials-id'
-        GIT_CREDENTIALS_ID = 'git-credentials-id'
+        GIT_CREDENTIALS_ID = credentials('git-credentials-id')
+
     }
 
     stages {
@@ -16,13 +17,13 @@ pipeline {
 
         stage('Installation des dépendances') {
             steps {
-                bat 'npm install' // Utiliser sh si l'agent est sous Linux
+                bat 'npm install' 
             }
         }
 
         stage('Tests') {
             steps {
-                bat 'npm test' // Utiliser sh si l'agent est sous Linux
+                bat 'npm test' 
             }
         }
 
@@ -48,7 +49,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://127.0.0.1:54825']) {
+                        withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://127.0.0.1:51662']) {
                             bat 'kubectl apply -f db-secret.yaml --validate=false'
                             bat 'kubectl apply -f k8s/deployment.yaml --validate=false'
                             bat 'kubectl apply -f k8s/service.yaml --validate=false'
@@ -59,23 +60,24 @@ pipeline {
                 }
             }
         }
-    }
-stage('Deploy Monitoring Stack') {
-    steps {
-        script {
-            withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://127.0.0.1:54825']) {
-                // Déployer Prometheus
-                bat 'kubectl apply -f monitoring/prometheus-config.yaml'
-                bat 'kubectl apply -f monitoring/prometheus-deployment.yaml'
-                bat 'kubectl apply -f monitoring/prometheus-service.yaml'
 
-                // Déployer Grafana
-                bat 'kubectl apply -f monitoring/grafana-deployment.yaml'
-                bat 'kubectl apply -f monitoring/grafana-service.yaml'
+        stage(' Monitoring ') {
+            steps {
+                script {
+                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://127.0.0.1:51662']) {
+                        // Déployer Prometheus
+                        bat 'kubectl apply -f monitoring/prometheus-config.yaml'
+                        bat 'kubectl apply -f monitoring/prometheus-deployment.yaml'
+                        bat 'kubectl apply -f monitoring/prometheus-service.yaml'
+
+                        // Déployer Grafana
+                        bat 'kubectl apply -f monitoring/grafana-deployment.yaml'
+                        bat 'kubectl apply -f monitoring/grafana-service.yaml'
+                    }
+                }
             }
         }
     }
-}
 
     post {
         success {
