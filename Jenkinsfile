@@ -64,7 +64,7 @@ pipeline {
         stage(' Monitoring ') {
             steps {
                 script {
-                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://127.0.0.1:54825']) {
+                    withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://127.0.0.1:51662']) {
                         // Déployer Prometheus
                         bat 'kubectl apply -f monitoring/prometheus-config.yaml'
                         bat 'kubectl apply -f monitoring/prometheus-deployment.yaml'
