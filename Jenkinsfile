@@ -45,7 +45,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Deploy to Kubernetes   avec mise a jour') {
             steps {
                 script {
                     try {
