@@ -45,7 +45,7 @@ pipeline {
             }
         }
 
-        stage('Deploy avec k8s') {
+        stage('Deploy  k8s') {
             steps {
                 script {
                     try {
