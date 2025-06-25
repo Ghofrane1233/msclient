@@ -45,11 +45,11 @@ pipeline {
             }
         }
 
-        stage('Deploy  k8s   ') {
+        stage('Deploy') {
             steps {
                 script {
                     try {
-                        withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://127.0.0.1:52791']) {
+                        withKubeConfig([credentialsId: 'kubeconfig', serverUrl: 'https://127.0.0.1:54337']) {
                             bat 'kubectl apply -f db-secret.yaml --validate=false'
                             bat 'kubectl apply -f k8s/deployment.yaml --validate=false'
                             bat 'kubectl apply -f k8s/service.yaml --validate=false'
