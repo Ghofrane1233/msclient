@@ -45,7 +45,7 @@ pipeline {
             }
         }
 
-        stage('Deploy  k8s') {
+        stage('Deploy  k8s Minikube') {
             steps {
                 script {
                     try {
